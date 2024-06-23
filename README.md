@@ -30,7 +30,7 @@ Express.js application with mongoDB database
 *
 *
 *
-* 
+Thanks to Neeharika Mandadapu, Nandana Elizabeth, Siddharth Sanjay for being 
 
 ## How to Use
 To clone and run this application, you'll need [Git](https://git-scm.com) and [Python](https://www.python.org/) installed on your computer. From your command line:
