@@ -1,4 +1,4 @@
-# <a href = 'https://spotify.aranish.codes'> spotifyvisualizer </a> 
+# <a href = 'https://spotify.aranish.codes'> Spotify Visualizer </a> 
 Express.js application with mongoDB database
 
 <h1 align="center">
@@ -9,7 +9,7 @@ Express.js application with mongoDB database
   <br>
 </h1>
 
-<h4 align="center">An visualizer using the spotify API (Still in Dev Mode). Build with express.js framework <a href="https://www.python.org/" target="_blank">Python</a>.</h4>
+<h4 align="center">An visualizer using the spotify API (Still in Dev Mode). Build with express.js framework <br> <a href="https://spotify.aranish.codes" target="_blank">Link to website</a>.</h4>
 
 <p align="center">
   <a href="https://www.paypal.me/aranish911">
