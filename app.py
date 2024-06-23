@@ -1,90 +1,198 @@
-from flask import Flask, request, jsonify, redirect
-from spotipy import Spotify
-from spotipy.oauth2 import SpotifyOAuth
-from flask_cors import CORS
-from flask import render_template
-from flask import redirect
+const express = require('express');
+const cors = require('cors');
+const SpotifyWebApi = require('spotify-web-api-node');
+const path = require('path');
+const crypto = require('crypto');
+const session = require('express-session');
+const mongoose = require('mongoose');
+const e = require('express');
 
-app = Flask(__name__)
-CORS(app)
+const app = express();
+app.use(cors());
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-CLIENT_ID = 'eacc38d5400647a3bb37b451f2aa2a4e'
-CLIENT_SECRET = 'a04cc40f764f463591fc55f01ae75a85'
-REDIRECT_URI = 'https://016c-146-70-72-135.ngrok-free.app/callback'
 
-sp_oauth = SpotifyOAuth(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
-    redirect_uri=REDIRECT_URI,
-    scope='user-read-playback-state,user-read-currently-playing'
-)
+const CLIENT_ID = 'eacc38d5400647a3bb37b451f2aa2a4e';
+const CLIENT_SECRET = 'a04cc40f764f463591fc55f01ae75a85';
+const REDIRECT_URI = 'https://spotify.aranish.codes/callback';
+// const REDIRECT_URI = 'http://localhost:3000/callback';
+const spotifyApi = new SpotifyWebApi({
+  clientId: CLIENT_ID,
+  clientSecret: CLIENT_SECRET,
+  redirectUri: REDIRECT_URI
+});
 
-@app.route('/login')
-def login():
-    auth_url = sp_oauth.get_authorize_url()
-    return redirect(auth_url)
+const sessionSecret = crypto.randomBytes(32).toString('hex');
 
-@app.route('/callback')
-def callback():
-    code = request.args.get('code')
-    token_info = sp_oauth.get_access_token(code)
-    return redirect('/')
+app.use(session({
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: true,
+}));
 
-@app.route('/')
-def visualizer():
-    return render_template('visualizer.html')
+app.use((req, res, next) => {
+  if (req.session.access_token && req.session.refresh_token) {
+    spotifyApi.setAccessToken(req.session.access_token);
+    spotifyApi.setRefreshToken(req.session.refresh_token);
+  }
+  next();
+});
 
-@app.route('/playing')
-def playing():
-    token_info = sp_oauth.get_cached_token()
-    if not token_info:
-        return jsonify({'error': 'Not authenticated'}), 401
+// Uncomment this out if you want to use MongoDB (not nessecary if local use only)
 
-    sp = Spotify(auth=token_info['access_token'])
-    current_track = sp.current_user_playing_track()
+// // const mongoUri = 'mongodb://localhost:27017/myapp';
 
-    if current_track is None:
-        return jsonify({'is_playing': False, 'track': None})
+// // mongoose.connect(mongoUri, {
+// //   useNewUrlParser: true,
+// //   useUnifiedTopology: true,
+// // })
+// //   .then(() => console.log('Connected to MongoDB'))
+// //   .catch(err => console.error('Connection error:', err));
+
+// // // Mongoose schema and model
+// // const trackSchema = new mongoose.Schema({
+// //   name: String,
+// //   artist: String,
+// //   album_image_url: String,
+// //   is_playing: Boolean,
+// //   progress_ms: Number,
+// //   duration_ms: Number,
+// //   timestamp: { type: Date, default: Date.now }
+// // });
+
+// // const Track = mongoose.model('Track', trackSchema);
+
+app.get('/login', (req, res) => {
+  const scopes = ['user-read-playback-state', 'user-read-currently-playing'];
+  const authorizeURL = spotifyApi.createAuthorizeURL(scopes);
+  const originalUrl = req.query.originalUrl || req.headers.referer || '/';
+  req.session.originalUrl = originalUrl;
+  res.redirect(authorizeURL);
+});
+
+app.get('/callback', async (req, res) => {
+  const code = req.query.code;
+  try {
+    const data = await spotifyApi.authorizationCodeGrant(code);
+    const { access_token, refresh_token } = data.body;
     
-    return jsonify({'is_playing': current_track['is_playing'], 'track': current_track})
+    req.session.access_token = access_token;
+    // console.log('access_token', req.session.access_token);
+    req.session.refresh_token = refresh_token;
 
-@app.route('/current_track')
-def current_track():
-    token_info = sp_oauth.get_cached_token()
-    if not token_info:
-        return jsonify({'error': 'Not authenticated'}), 401
+    spotifyApi.setAccessToken(access_token);
+    spotifyApi.setRefreshToken(refresh_token);
 
-    sp = Spotify(auth=token_info['access_token'])
-    current_track = sp.current_user_playing_track()
+    const originalUrl = req.session.originalUrl || '/';
+    delete req.session.originalUrl;
+    res.redirect(originalUrl);
+  } catch (err) {
+    res.status(400).send('Error retrieving access token');
+  }
+});
 
-    if current_track is None or current_track['item'] is None:
-        return jsonify({'is_playing': False, 'track': None})
+app.get('/', (req, res) => {
+  if (!req.session.access_token) {
+    return res.render('login');
+  } else {
+  res.render('visualizer');
+  }
+});
 
-    track_info = {
-        'is_playing': current_track['is_playing'],
-        'name': current_track['item']['name'],
-        'artist': current_track['item']['artists'][0]['name'],
-        'album_image_url': current_track['item']['album']['images'][0]['url'],
-        'progress_ms': current_track['progress_ms'],
-        'duration_ms': current_track['item']['duration_ms']
+app.get('/playing', async (req, res) => {
+  const token = spotifyApi.getAccessToken();
+  if (!token) {
+    return res.status(201).json({ error: 'Not authenticated' });
+  }
+
+  try {
+    const currentTrack = await spotifyApi.getMyCurrentPlayingTrack();
+    if (!currentTrack.body || !currentTrack.body.item) {
+      return res.json({ is_playing: false, track: null });
     }
 
-    return jsonify(track_info)
+    const trackData = {
+      is_playing: currentTrack.body.is_playing,
+      name: currentTrack.body.item.name,
+      artist: currentTrack.body.item.artists[0].name,
+      album_image_url: currentTrack.body.item.album.images[0].url,
+      progress_ms: currentTrack.body.progress_ms,
+      duration_ms: currentTrack.body.item.duration_ms
+    };
 
-@app.route('/nowplaying')
-def nowplaying():
-    return render_template('nowplaying.html')
+    // Save track to MongoDB
+    const track = new Track(trackData);
+    await track.save();
 
-# @app.route('/stop')
-# def stop():
-#     token_info = sp_oauth.get_cached_token()
-#     if not token_info:
-#         return jsonify({'error': 'Not authenticated'}), 401
+    res.json(trackData);
+  } catch (err) {
+    console.error('Error retrieving current track');
+    res.status(400).json({ error: 'Error retrieving current track' });
+  }
+});
 
-#     sp = Spotify(auth=token_info['access_token'])
-#     sp.pause_playback()
+app.get('/current_track', async (req, res) => {
+  const token = spotifyApi.getAccessToken();
+  if (!token) {
+    return res.status(201).json({ error: 'Not authenticated' });
+  }
 
-#     return redirect('/')
+  try {
+    const currentTrack = await spotifyApi.getMyCurrentPlayingTrack();
+    if (!currentTrack.body || !currentTrack.body.item) {
+      return res.json({ is_playing: false, track: null });
+    }
 
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=3000, debug=True)
+    const trackInfo = {
+      is_playing: currentTrack.body.is_playing,
+      name: currentTrack.body.item.name,
+      artist: currentTrack.body.item.artists[0].name,
+      album_image_url: currentTrack.body.item.album.images[0].url,
+      progress_ms: currentTrack.body.progress_ms,
+      duration_ms: currentTrack.body.item.duration_ms
+    };
+
+    res.json(trackInfo);
+  } catch (err) {
+    console.error('Error retrieving current track');
+    res.status(400).json({ error: 'Error retrieving current track' });
+  }
+});
+
+app.get('/audio-features', async (req, res) => {
+  const token = req.session.access_token;
+  // console.log('token', token);
+  if (!token) {
+      return res.status(401).send('Access token is missing');
+  }
+
+  try {
+      const playbackData = await spotifyApi.getMyCurrentPlaybackState();
+      if (playbackData.body && playbackData.body.is_playing) {
+          const trackId = playbackData.body.item.id;
+          const audioFeaturesData = await spotifyApi.getAudioFeaturesForTrack(trackId);
+          res.json(audioFeaturesData.body);
+      } else {
+          res.json({ is_playing: false });
+      }
+  } catch (err) {
+      console.error('Error retrieving audio features', err);
+      res.status(429).send({err} + 'Spotify API rate limit exceeded');
+      res.json({ is_playing: false });
+  }
+});
+
+
+app.get('/nowplaying', (req, res) => {
+  if (!req.session.access_token) {
+    return res.render('login');
+  } else {
+  res.render('nowplaying');
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on' +  REDIRECT_URI);
+});
