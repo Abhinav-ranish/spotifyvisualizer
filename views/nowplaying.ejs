@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spotify Visualizer</title>
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: black;
+            color: white;
+            position: relative;
+        }
+        h1 {
+            margin-top: 50px;
+            color: white;
+        }
+        #track-image {
+            margin-top: 30px;
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+        }
+        #progress-bar {
+            position: relative;
+            margin: 0 auto;
+            margin-top: 30px;
+            width: 300px;
+            height: 10px;
+            background-color: lightgray;
+        }
+        #progress {
+            height: 100%;
+            background-color: yellow;
+        }
+        a {
+            text-decoration: none;
+            color: silver;
+            padding-left: 20px;
+        }
+        .selector {
+            display: flex;
+            justify-content: left;
+            padding-left: 10px;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        async function fetchTrackInfo() {
+            const response = await fetch('/current_track');
+            const data = await response.json();
+            return data;
+        }
+
+        async function updateTrackInfo() {
+            const track = await fetchTrackInfo();
+            updateUI(track);
+        }
+
+        function updateUI(track) {
+            if (track.is_playing) {
+                const progressPercentage = (track.progress_ms / track.duration_ms) * 100;
+                document.getElementById('track-image').src = track.album_image_url;
+                document.getElementById('track-name').textContent = track.name;
+                document.getElementById('track-artist').textContent = track.artist;
+                document.getElementById('progress').style.width = progressPercentage + '%';
+            } else {
+                document.getElementById('track-name').textContent = 'Not Playing';
+                document.getElementById('track-artist').textContent = '';
+                document.getElementById('track-image').src = '';
+                document.getElementById('progress').style.width = '0%';
+            }
+        }
+
+        setInterval(updateTrackInfo, 3000);  // Fetch and update every 1 seconds
+    </script>
+    <header id="main-header">
+        <div class="selector">
+            <a href="/">Home &nbsp;</a>
+            <a href="/login">Reload</a>
+            <a href="/nowplaying">Now Playing </a>
+        </div>
+    </header>
+    <h1>Now Playing</h1>
+    <div id="track-info">
+        <img id="track-image" src="" alt=" ">
+        <h2 id="track-name"></h2>
+        <h3 id="track-artist"></h3>
+    </div>
+    <div id="progress-bar">
+        <div id="progress"></div>
+    </div>
+</body>
+</html>

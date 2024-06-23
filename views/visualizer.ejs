@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <title>Spotify Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            height:auto;
+            width:auto;
+            background-color: black;
+            background-image: url("back.gif");
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+        a {
+            text-decoration: none;
+            color: silver;
+            padding-left: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            padding-top: 20px;
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0);
+            z-index: 2;
+        }
+        .selector {
+            display: flex;
+            justify-content: left;
+            padding-top: 10px;
+            gap: 20px;
+        }
+        .selector1 {
+            display: flex;
+            gap: 10px;
+            justify-content: right;
+            padding: 10px;
+        }
+        button {
+            padding: 5px;
+            background-color: transparent;
+            border: none;
+            color: silver;
+            cursor: pointer;
+        }
+
+    
+        .visualizer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .selector1 {
+            display: flex;
+            padding-right: 10px;
+            width: auto;
+            background-color: rgba(0, 0, 0, 0);
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            z-index: 3;
+            color: white;
+        }
+        .copyright {          
+            display: flex;
+            background-color: rgba(0, 0, 0, 0);
+            width: auto;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 3;
+            color: silver;
+            padding: 10px;
+        }
+
+    </style>
+    </head>
+    <body>
+        <header id="main-header">
+            <div class="header">
+                <div class="selector">
+                    <a href="/">Home</a>
+                    <a href="/login">Reload</a>
+                    <a href="/nowplaying">Now&nbsp;Playing</a>
+                </div>
+                <%- include('partials/nowplaying') %>
+            </div>
+       
+        </header>
+        <!-- <div class ="visualizerback"></div> -->
+            
+        <div class="visualizer"></div>
+
+        
+        <footer>
+            <div class="copyright">
+                <a href="https:www.github.com/Abhinav-ranish" target="_blank">&copy; 2024 Spotify Visualizer - Abhinav-ranish @Github</a>
+            </div>
+            <div class="selector1">
+                <button id="heartAnimation">Heart Animation</button>
+                <button id="circleAnimation">Circle Animation</button>
+                <!-- <button id="imageAnimation">Mom Button</button> -->
+            </div>
+        </footer>
+   
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script>
+            let isPlaying = false;
+            let volume = -8;
+            let energy = 0.512;
+            let dance = 0.599;
+            let currentAnimation = 'circle';
+
+            let scene = new THREE.Scene();
+            scene.background = null; 
+            let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            let renderer = new THREE.WebGLRenderer({ alpha: true }); 
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.querySelector('.visualizer').appendChild(renderer.domElement);
+
+            // Heart shape and geometry
+            let heartShape = new THREE.Shape();
+            heartShape.moveTo(0, 0.25);
+            heartShape.bezierCurveTo(0, 0.25, -0.2, 0, -0.5, 0);
+            heartShape.bezierCurveTo(-1, 0, -1, 0.5, -1, 0.5);
+            heartShape.bezierCurveTo(-1, 0.8, -0.3, 1.5, 0, 2);
+            heartShape.bezierCurveTo(0.3, 1.5, 1, 0.8, 1, 0.5);
+            heartShape.bezierCurveTo(1, 0.5, 1, 0, 0.5, 0);
+            heartShape.bezierCurveTo(0.2, 0, 0, 0.25, 0, 0.25);
+
+            let extrudeSettings = {
+                steps: 1,
+                depth: 0.1,
+                bevelEnabled: true,
+                bevelThickness: 0.05,
+                bevelSize: 0.05,
+                bevelSegments: 1
+            };
+            let heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+            let heartMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            let heartMesh = new THREE.Mesh(heartGeometry, heartMaterial);
+            heartMesh.position.set(0, 1.7, 0); // Position the heart in the scene
+            
+
+            // Circle geometries and meshes
+            let smallGeometry = new THREE.SphereGeometry(1.5, 128, 128);
+            let smallMaterial = new THREE.MeshBasicMaterial({ color: 0xb7b2b2 });
+            let smallSphere = new THREE.Mesh(smallGeometry, smallMaterial);
+            smallSphere.renderOrder = 0; 
+            
+
+            let geometry = new THREE.SphereGeometry(1.5, 128, 128);
+            let material = new THREE.MeshBasicMaterial({ color: 0x6aa84f });
+            let sphere = new THREE.Mesh(geometry, material);
+            sphere.renderOrder = 1;
+            
+
+
+            // let texture = new THREE.TextureLoader().load('/mom.png');
+            // let geometry1 = new THREE.BoxGeometry(2,2,2);
+            // let material1 = new THREE.MeshBasicMaterial({ map: texture });
+            
+            // let sphere1 = new THREE.Mesh(geometry1, material1);
+            // sphere1.renderOrder = 2;
+            // scene.add(sphere1);
+
+            camera.position.z = 5;
+
+            // Function to fetch audio features
+            function updateVisualizer() {
+                fetch('/audio-features')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.is_playing !== false) {
+                            isPlaying = true;
+                            volume = data.loudness;
+                            energy = data.energy;
+                            dance = data.danceability;
+                        } else {
+                            isPlaying = false;
+                        }
+                    });
+            }
+            setInterval(updateVisualizer, 60000);
+
+            function updateNowplaying() {
+                fetch('/current_track')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.is_playing !== false) {
+                            isPlaying = true;
+                        } else {
+                            isPlaying = false;
+                        }
+                    });
+            }
+            setInterval(updateNowplaying, 4000);
+
+            // Animation switcher
+            document.getElementById('heartAnimation').addEventListener('click', () => {
+                currentAnimation = 'heart';
+            });
+
+            document.getElementById('circleAnimation').addEventListener('click', () => {
+                currentAnimation = 'circle';
+            });
+
+            // document.getElementById('imageAnimation').addEventListener('click', () => {
+            //     currentAnimation = 'image';
+            // });
+
+            // Animation function
+            function animate() {
+                requestAnimationFrame(animate);
+
+                if (isPlaying) {
+                    const time = Date.now() * 0.001;
+                    const beatFactor = Math.sin(time * energy * 10) * 0.5;
+                    const volumeFactor = volume * -0.1;
+                    const energyFactor = (dance/2) + volumeFactor;
+
+                    if (currentAnimation === 'heart') {
+                        scene.remove(sphere);
+                        // scene.remove(sphere1);
+                        scene.remove(smallSphere);
+                        scene.add(heartMesh);
+                        const scale = 1.4 + beatFactor * energyFactor;
+                        heartMesh.scale.set(scale, -scale, scale);
+
+                    } else if (currentAnimation === 'circle') {
+                        scene.remove(heartMesh);
+                        // scene.remove(sphere1);
+                        scene.add(smallSphere);
+                        scene.add(sphere);
+                        sphere.scale.x = 1 + beatFactor * energyFactor;
+                        smallSphere.scale.y = (1 + beatFactor * energyFactor);
+
+                    // } else if (currentAnimation === 'image') {
+                    //     scene.remove(heartMesh);
+                    //     scene.remove(sphere);
+                    //     scene.remove(smallSphere);
+                    //     scene.add(sphere1)
+                    //     sphere1.rotation.y = 1 + beatFactor * energyFactor;
+                    //     sphere1.rotation.x = 1 + beatFactor * energyFactor;
+                    //     const scale = 1.4 + beatFactor * energyFactor;
+                    //     sphere1.scale.set(scale, scale, scale);
+                    }
+
+                    
+                } else {
+                    scene.remove(heartMesh);
+                    scene.remove(sphere);
+                    scene.remove(smallSphere);
+                }
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        </script>
+    </body>
+</html>
