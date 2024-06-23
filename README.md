@@ -25,8 +25,6 @@ Express.js application with mongoDB database
   <a href="#license">License</a>
 </p>
 
-[![screenshot](https://img.youtube.com/vi/SxLpP7ES3-o/0.jpg)](https://youtu.be/SxLpP7ES3-o)
-
 ## Key Features
 * Cross-compatible (Mac, Unix, Windows)
 *
