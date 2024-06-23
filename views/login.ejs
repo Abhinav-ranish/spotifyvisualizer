@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Visualizer Login</title>
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <style>
+        header {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; 
+            justify-content: flex-start; 
+            padding-left: 10px;
+            padding-top: 20px;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0); 
+        }
+
+        a {
+            text-decoration: none;
+            color: silver;
+            padding-left: 20px;
+        }
+
+        .selector {
+            display: flex;
+            justify-content: left;
+            padding-left: 20px;
+            gap: 20px;
+        }
+
+        body {
+            display: flex;
+            background-image: url("/back1.gif");
+            background-size: cover;
+            background-repeat: no-repeat;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .login-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60vw;
+            height: 30vh;
+            font-family: 'Chalkduster', fantasy;
+            background-color: transparent;
+            color: #FFFDE7;
+            font-size: 50px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 10px;
+        }
+
+        .login-button:hover {
+            background-color: rgba(128, 128, 128, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>                
+            <div class="selector">
+                <a href="/">Home</a>
+                <a href="/nowplaying">Now&nbsp;Playing</a>
+            </div>
+        </header>
+        <button class="login-button" onclick="location.href='/login'">Login</button>
+    </div>
+</body>
+</html>
