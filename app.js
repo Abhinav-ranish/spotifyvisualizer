@@ -14,8 +14,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-const CLIENT_ID = 'eacc38d5400647a3bb37b451f2aa2a4e';
-const CLIENT_SECRET = 'a04cc40f764f463591fc55f01ae75a85';
+const CLIENT_ID = '';
+const CLIENT_SECRET = '';
 const REDIRECT_URI = 'https://spotify.aranish.codes/callback';
 // const REDIRECT_URI = 'http://localhost:3000/callback';
 const spotifyApi = new SpotifyWebApi({
