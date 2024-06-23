@@ -1,0 +1,50 @@
+<style>
+    h1,h2,h3 {
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: normal;
+    }
+    #now-playing-info {
+        size: relative;
+        width: relative;
+        height: relative;
+    }
+</style>
+
+<div id="now-playing-info" style="position: absolute; top: 3%; right: 2%; background-color: rgba(0, 0, 0, 0.5); padding: 20px; border-radius: 10px; color: white; text-align: center;">
+    <img id="track-image-small" src="" alt="" style="width: 100px; height: 100px; object-fit: cover;">
+    <h2 id="track-name-small" style="font-size: 16px;"></h2>
+    <h3 id="track-artist-small" style="font-size: 14px;"></h3>
+    <div id="progress-bar-small" style="position: relative; margin-top: 10px; width: 100px; height: 5px; background-color: lightgray; margin: 0 auto;">
+        <div id="progress-small" style="height: 100%; background-color: yellow;"></div>
+    </div>
+</div>
+
+<script>
+    async function fetchTrackInfoSmall() {
+        const response = await fetch('/current_track');
+        const data = await response.json();
+        return data;
+    }
+
+    async function updateTrackInfoSmall() {
+        const track = await fetchTrackInfoSmall();
+        updateUISmall(track);
+    }
+
+    function updateUISmall(track) {
+        if (track.is_playing) {
+            const progressPercentage = (track.progress_ms / track.duration_ms) * 100;
+            document.getElementById('track-image-small').src = track.album_image_url;
+            document.getElementById('track-name-small').textContent = track.name;
+            document.getElementById('track-artist-small').textContent = track.artist;
+            document.getElementById('progress-small').style.width = progressPercentage + '%';
+        } else {
+            document.getElementById('track-name-small').textContent = 'Not Playing';
+            document.getElementById('track-artist-small').textContent = '';
+            document.getElementById('track-image-small').src = '';
+            document.getElementById('progress-small').style.width = '0%';
+        }
+    }
+
+    setInterval(updateTrackInfoSmall, 3000); 
+</script>
