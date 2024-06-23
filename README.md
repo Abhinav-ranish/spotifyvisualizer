@@ -86,7 +86,3 @@ MIT
 > GitHub [@abhinav-ranish](https://github.com/abhinav-ranish) &nbsp;&middot;&nbsp;
 > Instagram [@abhinav.ranish](https://instagram.com/abhinav.ranish)
 
-
-
-## Youtube Video - Outdated (Only has scraper)
-[![Alt text](https://img.youtube.com/vi/Rb7f3m1Acos/0.jpg)](https://youtu.be/Rb7f3m1Acos)
